@@ -4,7 +4,6 @@ import time
 import os
 
 app = Flask(__name__)
-
 API_URL = "https://www.receitaws.com.br/v1/cnpj/{}"
 
 def consultar_cnpj(cnpj):
@@ -47,4 +46,4 @@ def consultar():
     return jsonify(resultados)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
