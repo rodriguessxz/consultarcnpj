@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <title>Consulta de CNPJs</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        textarea { width: 400px; height: 150px; font-size: 16px; }
+        button { font-size: 16px; padding: 8px 16px; margin-top: 10px; }
+        table { border-collapse: collapse; margin-top: 20px; width: 100%; max-width: 900px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #eee; }
+        .erro { color: red; }
+        #status { margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Consulta de CNPJs</h1>
+    <p>Cole os CNPJs separados por vírgula ou linha:</p>
+    <textarea id="cnpjs" placeholder="Exemplo: 00000000000191"></textarea><br />
+    <button onclick="consultar()">Consultar</button>
+
+    <div id="status"></div>
+    <div id="resultado"></div>
+
+    <script>
+        async function consultar() {
+            const texto = document.getElementById('cnpjs').value.trim();
+            if (!texto) {
+                alert('Por favor, cole ao menos um CNPJ.');
+                return;
+            }
+            document.getElementById('resultado').innerHTML = '';
+            document.getElementById('status').innerText = 'Iniciando consulta...';
+
+            const cnpjs = texto.replace(/,/g, '\n').split('\n').map(c => c.trim()).filter(c => c);
+
+            let resultados = [];
+            for (let i = 0; i < cnpjs.length; i++) {
+                document.getElementById('status').innerText = `Consultando ${i+1} de ${cnpjs.length}... (${cnpjs[i]})`;
+                try {
+                    const response = await fetch('/consultar', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ cnpjs: cnpjs[i] })
+                    });
+                    const data = await response.json();
+                    resultados.push(data[0]);
+                } catch (err) {
+                    resultados.push({ cnpj: cnpjs[i], erro: 'Erro na consulta' });
+                }
+                // Pequeno delay para evitar batidas muito rápidas (3 req/min na API)
+                await new Promise(r => setTimeout(r, 7000));
+            }
+
+            document.getElementById('status').innerText = 'Consulta finalizada.';
+
+            let html = '<table><tr><th>CNPJ</th><th>Nome</th><th>Situação</th><th>Telefone</th><th>Erro</th></tr>';
+            for (const d of resultados) {
+                html += `<tr>
+                    <td>${d.cnpj}</td>
+                    <td>${d.nome || ''}</td>
+                    <td>${d.situacao || ''}</td>
+                    <td>${d.telefone || ''}</td>
+                    <td class="erro">${d.erro || ''}</td>
+                </tr>`;
+            }
+            html += '</table>';
+            document.getElementById('resultado').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
