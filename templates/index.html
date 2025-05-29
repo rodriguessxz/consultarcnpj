@@ -1,32 +1,154 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <title>Consulta de CNPJs</title>
-    <style>
-        body { font-family: Arial; margin: 20px; }
-        textarea { width: 100%; height: 150px; }
-        pre { background: #f0f0f0; padding: 10px; white-space: pre-wrap; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Consulta de CNPJs</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #005f73;
+    }
+    textarea {
+      width: 100%;
+      max-width: 600px;
+      font-size: 1rem;
+      padding: 10px;
+      box-sizing: border-box;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      resize: vertical;
+      margin-bottom: 10px;
+    }
+    button {
+      background-color: #008891;
+      color: white;
+      font-size: 1.1rem;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      display: block;
+      margin: 0 auto 20px auto;
+      max-width: 200px;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #005f73;
+    }
+    #loading {
+      text-align: center;
+      font-weight: bold;
+      color: #0077b6;
+      display: none;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #00afb9;
+      color: white;
+    }
+    @media (max-width: 640px) {
+      textarea {
+        max-width: 100%;
+      }
+      table {
+        font-size: 0.9rem;
+      }
+      button {
+        max-width: 100%;
+      }
+    }
+  </style>
 </head>
 <body>
-    <h2>Consultar CNPJs</h2>
-    <textarea id="entrada" placeholder="Cole os CNPJs aqui, um por linha ou separados por vírgula"></textarea><br><br>
-    <button onclick="consultar()">Consultar</button>
-    <h3>Resultado:</h3>
-    <pre id="resultado"></pre>
+  <h1>Consulta de CNPJs</h1>
+  <textarea id="cnpjs" rows="8" placeholder="Cole os CNPJs aqui, um por linha"></textarea>
+  <button id="btnConsultar">Consultar</button>
+  <div id="loading">Consultando, aguarde...</div>
+  <div id="resultado"></div>
 
-    <script>
-        async function consultar() {
-            const cnpjs = document.getElementById("entrada").value;
-            const res = await fetch("/consultar", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ cnpjs })
-            });
-            const data = await res.json();
-            document.getElementById("resultado").textContent = JSON.stringify(data, null, 2);
+  <script>
+    const btn = document.getElementById('btnConsultar');
+    const loading = document.getElementById('loading');
+    const resultadoDiv = document.getElementById('resultado');
+
+    btn.addEventListener('click', async () => {
+      const cnpjsRaw = document.getElementById('cnpjs').value.trim();
+      if (!cnpjsRaw) {
+        alert('Por favor, cole ao menos um CNPJ.');
+        return;
+      }
+
+      // Prepara array de CNPJs limpos
+      const cnpjs = cnpjsRaw.split('\n')
+        .map(c => c.replace(/\D/g, ''))  // tira tudo que não é número
+        .filter(c => c.length === 14);   // só CNPJs válidos (14 dígitos)
+
+      if (cnpjs.length === 0) {
+        alert('Nenhum CNPJ válido encontrado. Certifique-se de que cada linha tem um CNPJ com 14 dígitos.');
+        return;
+      }
+
+      resultadoDiv.innerHTML = '';
+      loading.style.display = 'block';
+      btn.disabled = true;
+
+      try {
+        const resp = await fetch('/consultar', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({cnpjs})
+        });
+        const dados = await resp.json();
+
+        if (!Array.isArray(dados) || dados.length === 0) {
+          resultadoDiv.innerHTML = '<p>Nenhum dado retornado.</p>';
+          return;
         }
-    </script>
+
+        // Monta tabela com resultados
+        let tabelaHTML = '<table><thead><tr>' +
+          '<th>CNPJ</th><th>Nome</th><th>Status</th><th>Telefone</th>' +
+          '</tr></thead><tbody>';
+
+        for (const item of dados) {
+          tabelaHTML += `<tr>
+            <td>${item.cnpj || '-'}</td>
+            <td>${item.nome || '-'}</td>
+            <td>${item.status || '-'}</td>
+            <td>${item.telefone || '-'}</td>
+          </tr>`;
+        }
+        tabelaHTML += '</tbody></table>';
+
+        resultadoDiv.innerHTML = tabelaHTML;
+      } catch (error) {
+        resultadoDiv.innerHTML = `<p style="color:red;">Erro na consulta: ${error.message}</p>`;
+      } finally {
+        loading.style.display = 'none';
+        btn.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
