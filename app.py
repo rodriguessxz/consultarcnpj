@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 import requests
 import time
+import os
 
 app = Flask(__name__)
 
@@ -41,10 +42,9 @@ def consultar():
     for idx, cnpj in enumerate(lista_cnpjs):
         res = consultar_cnpj(cnpj)
         resultados.append(res)
-        # Delay reduzido para 20s entre 3 consultas = 6-7 segundos por consulta
         if idx < len(lista_cnpjs) - 1:
             time.sleep(7)
     return jsonify(resultados)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
