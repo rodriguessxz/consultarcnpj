@@ -99,10 +99,9 @@
         return;
       }
 
-      // Prepara array de CNPJs limpos
       const cnpjs = cnpjsRaw.split('\n')
-        .map(c => c.replace(/\D/g, ''))  // tira tudo que não é número
-        .filter(c => c.length === 14);   // só CNPJs válidos (14 dígitos)
+        .map(c => c.replace(/\D/g, ''))
+        .filter(c => c.length === 14);
 
       if (cnpjs.length === 0) {
         alert('Nenhum CNPJ válido encontrado. Certifique-se de que cada linha tem um CNPJ com 14 dígitos.');
@@ -126,17 +125,21 @@
           return;
         }
 
-        // Monta tabela com resultados
         let tabelaHTML = '<table><thead><tr>' +
-          '<th>CNPJ</th><th>Nome</th><th>Status</th><th>Telefone</th>' +
+          '<th>CNPJ</th><th>Nome</th><th>Status</th><th>Telefone</th><th>Atividade Principal</th>' +
           '</tr></thead><tbody>';
 
         for (const item of dados) {
+          const atividade = item.atividade_principal
+            ? `${item.atividade_principal.codigo} - ${item.atividade_principal.descricao}`
+            : '-';
+
           tabelaHTML += `<tr>
             <td>${item.cnpj || '-'}</td>
             <td>${item.nome || '-'}</td>
             <td>${item.status || '-'}</td>
             <td>${item.telefone || '-'}</td>
+            <td>${atividade}</td>
           </tr>`;
         }
         tabelaHTML += '</tbody></table>';
